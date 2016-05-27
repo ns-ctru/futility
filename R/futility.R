@@ -36,7 +36,7 @@ futility <- function(planned.case         = 100,
                      sd.pooled            = 1,
                      futility.theshold    = NA,
                      alpha                = 0.05,
-                     beta                 = 1.0,
+                     beta                 = 0.9,
                      ...){
     ## Check options
     if(is.na(planned.case) | is.null(planned.case) | is.na(planned.control) | is.null(planned.control)){
@@ -57,7 +57,20 @@ futility <- function(planned.case         = 100,
     if(!is.integer(planned.control)){
         print('Error : The planned number of controls should be an integer.')
     }
-    ## Check reported values
+    if(!is.numeric(alpha) | !is.numeric(beta)){
+        print('Error : alpha and beta must be numeric.')
+    }
+    if(alpha <0 | alpha > 1){
+        print('Error : alpha must be a numerical value (0 <= alpha <= 1)')
+    }
+    if(beta <0 | beta > 1){
+        print('Error : beta must be a numerical value (0 <= beta <= 1)')
+    }
+
+
+
+    }
+    ## Check recruited values
     if(method == 'binary'){
         if((recruited.case < 0 | recruited.case > 1)){
             print('Error : The proportion in the case arm must be 0 <= recruited.case <= 1 ')
@@ -70,12 +83,23 @@ futility <- function(planned.case         = 100,
     }
     ## Initialise list of results for returning
     results <- list()
-    ## Compute Genearlised information Fraction (Lachin (2005) eq1)
+    #############################################################################
+    ## Compute Genearlised information Fraction (Lachin (2005) eq1)            ##
+    #############################################################################
     results$information.fraction <- ((n.recruited.case^-1 + n.recruited.control^-1)^1) / ((planned.case^-1 + planned.control^-1)^-1)
     if(results$information.fraction < 0 | results$information.fraction > 1){
         print('Error : Something has gone wrong, the information fraction should be in the range of 0 to 1.  Please check you have correctly specified the planned and recruited numbers.')
         exit
     }
+    #############################################################################
+    ## Expected Theta = z-score - drift under H0                               ##
+    #############################################################################
+    results$theta <- inverse.gaussian(1 - (alpha / 2)) + inverse.gaussian(1 = beta)
+    #############################################################################
+    ## Interim Treatment effect                                                ##
+    #############################################################################
+    ## ToDo - query logic of dividing by zero?
+    ## results$interim.effect <- (recruited.case - recruited.control) /
     ## Return results
     return(results)
 }
