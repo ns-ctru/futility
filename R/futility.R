@@ -4,11 +4,22 @@
 #'
 #' @details
 #'
-#' @param planned.case
-#' @param planned.control
-#' @param recruited.case
-#' @param recruited.control
-#' @param planned.case
+#' @param planned.case Number of planned cases to be recruited.
+#' @param planned.control Number of planned controls to be recruited.
+#' @param n.recruited.case Number of recruited cases to date.
+#' @param n.recruited.control Number of recruited controls to date.
+#' @param mean.recruited.case Mean of outcome in cases recruited to date.
+#' @param mean.recruited.control Mean of outcome in controls recruited to date.
+#' @param sd.recruited.case Standard deviation in cases recruited to date.
+#' @param sd.recruited.control Standard deviation in controls recruited to date.
+#' @param sd.recruited.pooled Standard deviation in cases and controls recruited to date.
+#' @param method Type of outcome \code{continuous} (default) | \ccode{binary} | \code{survival}
+#' @param assumed.delta Assumed treatment effect.
+#' @param assumed.delta.final Assumed treatment effect at the end of the trial (i.e. the estimate used in the original sample size calculation).
+#' @param futility.threshold Pre-specified conditional power/futility threshold for deciding to stop.
+#' @param alpha Planned Type I error rate.
+#' @param beta Planned Type II error rate.
+#' @param null.treatment Difference between groups if the null is true.
 #'
 #' @return A list of results depending on the options specified.
 #'
@@ -21,22 +32,22 @@
 #'  Lachin JM (2005) A review of methods for futility stopping based on conditional power. Statistics in Medicine 24(18):2747-2764
 #'  Proschan MA, Lan KKG, and Wittes JT (2006) Statistical monitoring of clinical trials: a unified approach. Springer Science & Business Media
 #' @export
-futility <- function(planned.case         = 100,
-                     planned.control      = 100,
-                     n.recruited.case     = 50,
-                     n.recruited.control  = 50,
-                     recruited.case       = 1,
-                     recruited.control    = 2,
-                     sd.recruited.case    = 1,
-                     sd.recruited.control = 1,
-                     sd.recruited.pooled  = 1,
-                     method               = 'binary',
-                     assumed.delta        = 1,
-                     assumed.delta.final  = 1,
-                     sd.pooled            = 1,
-                     futility.theshold    = NA,
-                     alpha                = 0.05,
-                     beta                 = 0.9,
+futility <- function(planned.case           = 100,
+                     planned.control        = 100,
+                     n.recruited.case       = 50,
+                     n.recruited.control    = 50,
+                     mean.recruited.case    = 1,
+                     mean.recruited.control = 2,
+                     sd.recruited.case      = 1,
+                     sd.recruited.control   = 1,
+                     sd.recruited.pooled    = 1,
+                     method                 = 'continuous',
+                     assumed.delta          = 1,
+                     assumed.delta.final    = 1,
+                     futility.threshold     = NA,
+                     alpha                  = 0.05,
+                     beta                   = 0.9,
+                     null.treatment         = ,
                      ...){
     ## Check options
     if(is.na(planned.case) | is.null(planned.case) | is.na(planned.control) | is.null(planned.control)){
@@ -94,12 +105,18 @@ futility <- function(planned.case         = 100,
     #############################################################################
     ## Expected Theta = z-score - drift under H0                               ##
     #############################################################################
-    results$theta <- inverse.gaussian(1 - (alpha / 2)) + inverse.gaussian(1 = beta)
+    results$z.alpha <- qnorm(1 - (alpha / 2))
+    results$z.beta  <- qnrom(1 - beta)
+    results$theta   <- results$z.alpha + results$z.beta
     #############################################################################
-    ## Interim Treatment effect                                                ##
+    ## Interim treatment effect and standard error                             ##
     #############################################################################
     ## ToDo - query logic of dividing by zero?
-    ## results$interim.effect <- (recruited.case - recruited.control) /
+    ## results$interim.effect <- (recruited.case - recruited.control) / null.treatment
+    #############################################################################
+    ## Confidence interval for the interim treatment effect                    ##
+    #############################################################################
+    ## ToDo - query code, only uses z_a
     ## Return results
     return(results)
 }
