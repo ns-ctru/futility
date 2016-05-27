@@ -1,0 +1,10 @@
+Package: futility
+Title: Compute the conditional power of a Randomised Control Trial
+Version: 0.0.0.9000
+Authors@R: person("Neil", "Shephard", email = "n.shephard@sheffield.ac.uk", role = c("aut", "cre"))
+Description: Randomised Control Trials are powered based on estimates of the treatment effect and its variability.  Sometimes, before the trial has completed, it may be desirable to review the data and assess whether the trial can be stopped early for futility, which would be the case if any further data was not going to change the conclusion researchers would draw from currently available data.
+Depends: R (>= 3.3.0)
+Imports: dplyr
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
