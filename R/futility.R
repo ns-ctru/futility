@@ -4,6 +4,10 @@
 #'
 #' @details
 #'
+#' @param df Data frame of recruited data, must contain the \code{outcome}, \code{group} and optionally \code{recruited}.
+#' @param outcome The otucome variable you are assessing.
+#' @param group Binary indicator of allocation.
+#' @param recruited Date of an individuals recruitment.
 #' @param planned.case Number of planned cases to be recruited.
 #' @param planned.control Number of planned controls to be recruited.
 #' @param n.recruited.case Number of recruited cases to date.
@@ -32,10 +36,12 @@
 #'  Lachin JM (2005) A review of methods for futility stopping based on conditional power. Statistics in Medicine 24(18):2747-2764
 #'  Proschan MA, Lan KKG, and Wittes JT (2006) Statistical monitoring of clinical trials: a unified approach. Springer Science & Business Media
 #' @export
-futility <- function(planned.case           = 100,
-                     planned.control        = 100,
-                     n.recruited.case       = 50,
-                     n.recruited.control    = 50,
+futility <- function(df                     = data,
+                     outcome                = value,
+                     group                  = rand,
+                     recruited              = recruit.date,
+                     n.planned              = c(100, 100),
+                     n.recruited            =
                      mean.recruited.case    = 1,
                      mean.recruited.control = 2,
                      sd.recruited.case      = 1,
@@ -47,7 +53,7 @@ futility <- function(planned.case           = 100,
                      futility.threshold     = NA,
                      alpha                  = 0.05,
                      beta                   = 0.9,
-                     null.treatment         = ,
+                     null.treatment         = 0,
                      ...){
     ## Check options
     if(is.na(planned.case) | is.null(planned.case) | is.na(planned.control) | is.null(planned.control)){
@@ -94,23 +100,42 @@ futility <- function(planned.case           = 100,
     }
     ## Initialise list of results for returning
     results <- list()
+
+    #############################################################################
+    ## CONTINUOUS OUTCOMES                                                     ##
+    #############################################################################
+    if(method == 'continuous'){
+        ## Summarise data at final follow-up
+        if(!is.null(df) & !is.null(group) & !is.null(outcome)){
+            summary.time <- group_by(df, group) %>%
+                            summarise(mean = mean(outcome, na,rm = TRUE),
+                                      sd   = sd(outcome, na.rm = TRUE),
+                                      n    = n())
+        }
+        ## Summarise data cummitavely if recruited date is provided
+        if(!is.null(df) & !is.null(group) & !is.null(outcome) & !is.null(recruited)){
+            ## TODO - How to group by sequential dates and summarise events upto that time point?
+            ##        cummean() provides some functionality, but no SD
+            ##        https://stackoverflow.com/questions/34874582/calculating-cumulative-standard-deviation-by-group-using-r
+            summary.time <- group_by(df, group) %>%
+                            summarise(mean = cummean(outcome, na,rm = TRUE),
+                                      sd   = sd(outcome, na.rm = TRUE),
+                                      n    = n())
+        }
+        ## Expected Theta = z-score - drift under H0                               ##
+        results$theta <- qnorm(1 - (alpha / 2)) + qnrom(1 - beta)
+        results$h0    <- null.treatment
+        ## Interim treatment effect and standard error                             ##
+        results$h1    <- summary.time$mean[1] - summary.time$mean[2]
+    }
     #############################################################################
     ## Compute Genearlised information Fraction (Lachin (2005) eq1)            ##
     #############################################################################
-    results$information.fraction <- ((n.recruited.case^-1 + n.recruited.control^-1)^1) / ((planned.case^-1 + planned.control^-1)^-1)
+    results$information.fraction <- ((n.recruited.case^-1 + n.recruited.control^-1)^-1) / ((planned.case^-1 + planned.control^-1)^-1)
     if(results$information.fraction < 0 | results$information.fraction > 1){
         print('Error : Something has gone wrong, the information fraction should be in the range of 0 to 1.  Please check you have correctly specified the planned and recruited numbers.')
         exit
     }
-    #############################################################################
-    ## Expected Theta = z-score - drift under H0                               ##
-    #############################################################################
-    results$z.alpha <- qnorm(1 - (alpha / 2))
-    results$z.beta  <- qnrom(1 - beta)
-    results$theta   <- results$z.alpha + results$z.beta
-    #############################################################################
-    ## Interim treatment effect and standard error                             ##
-    #############################################################################
     ## ToDo - query logic of dividing by zero?
     ## results$interim.effect <- (recruited.case - recruited.control) / null.treatment
     #############################################################################
