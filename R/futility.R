@@ -17,7 +17,7 @@
 #' @param sd.recruited.case Standard deviation in cases recruited to date.
 #' @param sd.recruited.control Standard deviation in controls recruited to date.
 #' @param sd.recruited.pooled Standard deviation in cases and controls recruited to date.
-#' @param method Type of outcome \code{continuous} (default) | \ccode{binary} | \code{survival}
+#' @param method Type of outcome \code{continuous} (default) | \code{binary} | \code{survival}
 #' @param assumed.delta Assumed treatment effect.
 #' @param assumed.delta.final Assumed treatment effect at the end of the trial (i.e. the estimate used in the original sample size calculation).
 #' @param futility.threshold Pre-specified conditional power/futility threshold for deciding to stop.
@@ -49,45 +49,45 @@ futility <- function(df                     = data,
                      beta                   = 0.9,
                      null.treatment         = 0,
                      ...){
-    ## Check options
-    if(is.na(planned.case) | is.null(planned.case) | is.na(planned.control) | is.null(planned.control)){
-        print('Error : You must specify the planned number of participants for both arms.')
-        exit
-    }
-    if(is.na(n.recruited.case) | is.null(n.recruited.case) | is.na(n.recruited.control) | is.null(n.recruited.control)){
-        print('Error : You must specify the number of participants already recruited for both arms.')
-        exit
-    }
-    if(is.na(recruited.case) | is.null(recruited.case) | is.na(recruited.control) | is.null(recruited.control)){
-        print('Error : This is the immediate version of the command and you must specify the mean/proportion in both arms.  If you wish to use an existing data set and have these calculated automatically use the futility_data() function.')
-        exit
-    }
-    if(!is.integer(planned.case)){
-        print('Error : The planned number of cases should be an integer.')
-    }
-    if(!is.integer(planned.control)){
-        print('Error : The planned number of controls should be an integer.')
-    }
-    if(!is.numeric(alpha) | !is.numeric(beta)){
-        print('Error : alpha and beta must be numeric.')
-    }
-    if(alpha <0 | alpha > 1){
-        print('Error : alpha must be a numerical value (0 <= alpha <= 1)')
-    }
-    if(beta <0 | beta > 1){
-        print('Error : beta must be a numerical value (0 <= beta <= 1)')
-    }
-    ## Check recruited values
-    if(method == 'binary'){
-        if((recruited.case < 0 | recruited.case > 1)){
-            print('Error : The proportion in the case arm must be 0 <= recruited.case <= 1 ')
-            exit
-        }
-        if((recruited.control < 0 | recruited.control > 1)){
-            print('Error : The proportion in the control arm must be 0 <= recruited.control <= 1 ')
-            exit
-        }
-    }
+    ## ## Check options
+    ## if(is.na(planned.case) | is.null(planned.case) | is.na(planned.control) | is.null(planned.control)){
+    ##     print('Error : You must specify the planned number of participants for both arms.')
+    ##     exit
+    ## }
+    ## if(is.na(n.recruited.case) | is.null(n.recruited.case) | is.na(n.recruited.control) | is.null(n.recruited.control)){
+    ##     print('Error : You must specify the number of participants already recruited for both arms.')
+    ##     exit
+    ## }
+    ## if(is.na(recruited.case) | is.null(recruited.case) | is.na(recruited.control) | is.null(recruited.control)){
+    ##     print('Error : This is the immediate version of the command and you must specify the mean/proportion in both arms.  If you wish to use an existing data set and have these calculated automatically use the futility_data() function.')
+    ##     exit
+    ## }
+    ## if(!is.integer(planned.case)){
+    ##     print('Error : The planned number of cases should be an integer.')
+    ## }
+    ## if(!is.integer(planned.control)){
+    ##     print('Error : The planned number of controls should be an integer.')
+    ## }
+    ## if(!is.numeric(alpha) | !is.numeric(beta)){
+    ##     print('Error : alpha and beta must be numeric.')
+    ## }
+    ## if(alpha <0 | alpha > 1){
+    ##     print('Error : alpha must be a numerical value (0 <= alpha <= 1)')
+    ## }
+    ## if(beta <0 | beta > 1){
+    ##     print('Error : beta must be a numerical value (0 <= beta <= 1)')
+    ## }
+    ## ## Check recruited values
+    ## if(method == 'binary'){
+    ##     if((recruited.case < 0 | recruited.case > 1)){
+    ##         print('Error : The proportion in the case arm must be 0 <= recruited.case <= 1 ')
+    ##         exit
+    ##     }
+    ##     if((recruited.control < 0 | recruited.control > 1)){
+    ##         print('Error : The proportion in the control arm must be 0 <= recruited.control <= 1 ')
+    ##         exit
+    ##     }
+    ## }
     ## Initialise list of results for returning
     results <- list()
     #############################################################################
@@ -100,12 +100,9 @@ futility <- function(df                     = data,
                             summarise(mean = mean(outcome, na,rm = TRUE),
                                       sd   = sd(outcome, na.rm = TRUE),
                                       n    = n())
-            ## Standardise and derive SE
+            ## Derive SE
             summary.time <- mutate(summary.time,
                                    se = sd / sqrt(n))
-            ## TODO - Query why the null is subtracted, if its always zero its pointless, if its not zero
-            ##        why are you subtracting it from the current observed difference?
-            results$interim.effect <- summary.time$mean[1] - summary.time$mean[2] - null.treatment
         }
         ## Cumulative summary of data (only possible if recruited date is provided)
         if(!is.null(df) & !is.null(group) & !is.null(outcome) & !is.null(recruited)){
@@ -123,8 +120,8 @@ futility <- function(df                     = data,
         ## Interim treatment effect and standard deviation
         results$interim.mean.diff <- summary.time$mean[1] - summary.time$mean[2]
         results$interim.sd.diff   <- sqrt((summary.time$sd[1]^2 / summary.time$n[1]) + (summary.time$sd[2]^2 / summary.time$n[2]))
-        ## TODO - Standardised treatment effect
-        ## results$interim.z <-
+        ## Standardised treatment effect
+        results$interim.z <- results$interim.mean.diff / results$interim.sd.diff
         #############################################################################
         ## Compute Genearlised information Fraction (Lachin (2005) eq1)            ##
         #############################################################################
