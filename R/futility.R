@@ -41,12 +41,6 @@ futility <- function(df                     = data,
                      group                  = rand,
                      recruited              = recruit.date,
                      n.planned              = c(100, 100),
-                     n.recruited            =
-                     mean.recruited.case    = 1,
-                     mean.recruited.control = 2,
-                     sd.recruited.case      = 1,
-                     sd.recruited.control   = 1,
-                     sd.recruited.pooled    = 1,
                      method                 = 'continuous',
                      assumed.delta          = 1,
                      assumed.delta.final    = 1,
@@ -83,10 +77,6 @@ futility <- function(df                     = data,
     if(beta <0 | beta > 1){
         print('Error : beta must be a numerical value (0 <= beta <= 1)')
     }
-
-
-
-    }
     ## Check recruited values
     if(method == 'binary'){
         if((recruited.case < 0 | recruited.case > 1)){
@@ -101,14 +91,6 @@ futility <- function(df                     = data,
     ## Initialise list of results for returning
     results <- list()
     #############################################################################
-    ## Compute Genearlised information Fraction (Lachin (2005) eq1)            ##
-    #############################################################################
-    results$information.fraction <- ((n.recruited.case^-1 + n.recruited.control^-1)^-1) / ((planned.case^-1 + planned.control^-1)^-1)
-    if(results$information.fraction < 0 | results$information.fraction > 1){
-        print('Error : Something has gone wrong, the information fraction should be in the range of 0 to 1.  Please check you have correctly specified the planned and recruited numbers.')
-        exit
-    }
-    #############################################################################
     ## CONTINUOUS OUTCOMES                                                     ##
     #############################################################################
     if(method == 'continuous'){
@@ -118,6 +100,9 @@ futility <- function(df                     = data,
                             summarise(mean = mean(outcome, na,rm = TRUE),
                                       sd   = sd(outcome, na.rm = TRUE),
                                       n    = n())
+            ## Standardise and derive SE
+            summary.time <- mutate(summary.time,
+                                   se = sd / sqrt(n))
             ## TODO - Query why the null is subtracted, if its always zero its pointless, if its not zero
             ##        why are you subtracting it from the current observed difference?
             results$interim.effect <- summary.time$mean[1] - summary.time$mean[2] - null.treatment
@@ -127,16 +112,27 @@ futility <- function(df                     = data,
             ## TODO - How to group by sequential dates and summarise events upto that time point?
             ##        cummean() provides some functionality, but no SD
             ##        https://stackoverflow.com/questions/34874582/calculating-cumulative-standard-deviation-by-group-using-r
-            summary.time <- group_by(df, group) %>%
-                            summarise(mean = cummean(outcome, na,rm = TRUE),
-                                      sd   = sd(outcome, na.rm = TRUE),
-                                      n    = n())
+            summary.over.time <- group_by(df, group) %>%
+                                 summarise(mean = cummean(outcome, na,rm = TRUE),
+                                           sd   = sd(outcome, na.rm = TRUE),
+                                           n    = n())
         }
-        ## Expected Theta = z-score - drift under H0                               ##
-        results$theta <- qnorm(1 - (alpha / 2)) + qnrom(1 - beta)
-        results$h0    <- null.treatment
-        ## Interim treatment effect and standard error                             ##
-        results$h1    <-
+        ## Expected Theta = z-score - drift under H0
+        results$theta         <- qnorm(1 - (alpha / 2)) + qnrom(1 - beta)
+        results$interim.h0    <- null.treatment
+        ## Interim treatment effect and standard deviation
+        results$interim.mean.diff <- summary.time$mean[1] - summary.time$mean[2]
+        results$interim.sd.diff   <- sqrt((summary.time$sd[1]^2 / summary.time$n[1]) + (summary.time$sd[2]^2 / summary.time$n[2]))
+        ## TODO - Standardised treatment effect
+        ## results$interim.z <-
+        #############################################################################
+        ## Compute Genearlised information Fraction (Lachin (2005) eq1)            ##
+        #############################################################################
+        results$information.fraction <- ((summary.time$n[1]^-1 + summary.time$n[2]^-1)^-1) / ((planned.case^-1 + planned.control^-1)^-1)
+        ## if(results$information.fraction < 0 | results$information.fraction > 1){
+        ##     print('Error : Something has gone wrong, the information fraction should be in the range of 0 to 1.  Please check you have correctly specified the planned and recruited numbers.')
+        ##     exit
+        ## }
     }
     #############################################################################
     ## BINARY OUTCOMES                                                         ##
