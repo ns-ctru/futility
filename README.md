@@ -14,4 +14,4 @@ This repository contains the R package `futility` which allows the conditional p
 
 ## References
 
-* Lachin JM (2005) A review of methods for futility stopping based on conditional power. *Statist Med* **24**:2747-2764 DOI:10.1002/sim.2151
+* Lachin JM (2005) A review of methods for futility stopping based on conditional power. *Statist Med* **24**:2747-2764 [DOI : 10.1002/sim.2151](https://dx.doi.org/10.1002/sim.2151) [PMID : 16134130](https://www.ncbi.nlm.nih.gov/pubmed/16134130)
