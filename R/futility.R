@@ -100,19 +100,29 @@ futility <- function(df                     = data,
     }
     ## Initialise list of results for returning
     results <- list()
-
+    #############################################################################
+    ## Compute Genearlised information Fraction (Lachin (2005) eq1)            ##
+    #############################################################################
+    results$information.fraction <- ((n.recruited.case^-1 + n.recruited.control^-1)^-1) / ((planned.case^-1 + planned.control^-1)^-1)
+    if(results$information.fraction < 0 | results$information.fraction > 1){
+        print('Error : Something has gone wrong, the information fraction should be in the range of 0 to 1.  Please check you have correctly specified the planned and recruited numbers.')
+        exit
+    }
     #############################################################################
     ## CONTINUOUS OUTCOMES                                                     ##
     #############################################################################
     if(method == 'continuous'){
-        ## Summarise data at final follow-up
+        ## Summarise data at current interim
         if(!is.null(df) & !is.null(group) & !is.null(outcome)){
             summary.time <- group_by(df, group) %>%
                             summarise(mean = mean(outcome, na,rm = TRUE),
                                       sd   = sd(outcome, na.rm = TRUE),
                                       n    = n())
+            ## TODO - Query why the null is subtracted, if its always zero its pointless, if its not zero
+            ##        why are you subtracting it from the current observed difference?
+            results$interim.effect <- summary.time$mean[1] - summary.time$mean[2] - null.treatment
         }
-        ## Summarise data cummitavely if recruited date is provided
+        ## Cumulative summary of data (only possible if recruited date is provided)
         if(!is.null(df) & !is.null(group) & !is.null(outcome) & !is.null(recruited)){
             ## TODO - How to group by sequential dates and summarise events upto that time point?
             ##        cummean() provides some functionality, but no SD
@@ -126,22 +136,20 @@ futility <- function(df                     = data,
         results$theta <- qnorm(1 - (alpha / 2)) + qnrom(1 - beta)
         results$h0    <- null.treatment
         ## Interim treatment effect and standard error                             ##
-        results$h1    <- summary.time$mean[1] - summary.time$mean[2]
+        results$h1    <-
     }
     #############################################################################
-    ## Compute Genearlised information Fraction (Lachin (2005) eq1)            ##
+    ## BINARY OUTCOMES                                                         ##
     #############################################################################
-    results$information.fraction <- ((n.recruited.case^-1 + n.recruited.control^-1)^-1) / ((planned.case^-1 + planned.control^-1)^-1)
-    if(results$information.fraction < 0 | results$information.fraction > 1){
-        print('Error : Something has gone wrong, the information fraction should be in the range of 0 to 1.  Please check you have correctly specified the planned and recruited numbers.')
-        exit
+    ## TODO - Once Continuous outcomes sorted
+    else if(method == 'binary'){
     }
-    ## ToDo - query logic of dividing by zero?
-    ## results$interim.effect <- (recruited.case - recruited.control) / null.treatment
     #############################################################################
-    ## Confidence interval for the interim treatment effect                    ##
+    ## SURVIVAL OUTCOMES                                                       ##
     #############################################################################
-    ## ToDo - query code, only uses z_a
+    ## TODO - Once Continuous outcomes sorted
+    else if(method == 'survival'){
+    }
     ## Return results
     return(results)
 }
