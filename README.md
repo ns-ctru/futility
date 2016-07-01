@@ -7,6 +7,7 @@ This repository contains the R package `futility` which allows the conditional p
 ## Installation
 
     install.packages(devtools)
+	library(devtools)
 	devtools::install_github('ns-ctru/futility')
 
 ## Usage
